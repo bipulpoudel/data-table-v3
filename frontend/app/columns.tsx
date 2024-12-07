@@ -59,18 +59,21 @@ export const columns: ColumnDef<Project>[] = [
     ),
     cell: ({ row }) => <ProjectName name={row.getValue("name")} />,
     enableSorting: true,
+    enableMultiSort: true,
   },
   {
     accessorKey: "project_manager",
     header: "PM",
     cell: ({ row }) => (
-      <ProjectManager name={row.getValue("project_manager")} />
+      <ProjectManager projectManager={row.original.project_manager} />
     ),
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => <SortableHeader column={column} title="Status" />,
     cell: ({ row }) => <ProjectStatus status={row.getValue("status")} />,
+    enableSorting: true,
+    enableMultiSort: true,
   },
   {
     accessorKey: "last_updated",
@@ -78,7 +81,10 @@ export const columns: ColumnDef<Project>[] = [
       <SortableHeader column={column} title="Last updated" />
     ),
     cell: ({ row }) => (
-      <ProjectLastUpdate date={row.getValue("last_updated")} />
+      <ProjectLastUpdate
+        date={row.getValue("last_updated")}
+        last_updated_note={row.original.last_updated_note}
+      />
     ),
     enableSorting: true,
   },

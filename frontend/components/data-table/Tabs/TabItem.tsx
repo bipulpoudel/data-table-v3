@@ -9,12 +9,26 @@ const TabItem = ({
   item,
   activeTab,
   setActiveTab,
+  counts = {
+    risk: 0,
+    onHold: 0,
+    potentialRisk: 0,
+    onTrack: 0,
+    archived: 0,
+  },
 }: {
   item: IItem;
   activeTab: IItem["value"];
   setActiveTab: (value: IItem["value"]) => void;
+  counts: {
+    risk: number;
+    onHold: number;
+    potentialRisk: number;
+    onTrack: number;
+    archived: number;
+  };
 }) => {
-  const { label, value, number } = item;
+  const { label, value } = item;
 
   const handleClick = () => {
     setActiveTab(value);
@@ -40,7 +54,7 @@ const TabItem = ({
         <h3
           className={cn("font-normal", {
             "text-primary": isActive,
-            "font-bold": isActive,
+            "font-semibold": isActive,
           })}
         >
           {label}
@@ -50,7 +64,13 @@ const TabItem = ({
             "bg-primary text-white": isActive,
           })}
         >
-          {number}
+          {value === "all"
+            ? counts.risk +
+              counts.onHold +
+              counts.potentialRisk +
+              counts.onTrack +
+              counts.archived
+            : counts[value]}
         </span>
       </div>
     </>

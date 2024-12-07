@@ -5,10 +5,19 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Arrow } from "@radix-ui/react-tooltip";
+import { ProjectManager as IProjectManager } from "@/app/data";
 
-const ProjectManager = ({ name }: { name: string }) => {
+const ProjectManager = ({
+  projectManager,
+}: {
+  projectManager: IProjectManager;
+}) => {
+  if (!projectManager) {
+    return <p>-</p>;
+  }
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={100}>
@@ -16,13 +25,13 @@ const ProjectManager = ({ name }: { name: string }) => {
           <Avatar className="w-7 h-7 rounded-md">
             <AvatarImage src="https://github.com/shadcn.png" />
             <AvatarFallback>
-              {name[0]} {name.split(" ")[1][0]}
+              {projectManager.name[0]} {projectManager.name?.split(" ")[1][0]}
             </AvatarFallback>
           </Avatar>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="bg-gray-900 text-base">
           <Arrow />
-          {name}
+          {projectManager.name}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

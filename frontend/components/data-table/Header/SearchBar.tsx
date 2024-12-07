@@ -1,3 +1,13 @@
+"use client";
+import { useQueryState } from "nuqs";
+
+import {
+  ChevronDown,
+  Cross,
+  FilterIcon,
+  SearchIcon,
+  Trash,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,9 +16,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, FilterIcon, SearchIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const SearchBar = () => {
+  const [searchQuery, setSearchQuery] = useQueryState("searchQuery", {
+    defaultValue: "",
+    throttleMs: 500,
+  });
+
   return (
     <div className="flex flex-row items-center h-9 rounded-lg shadow-sm">
       <DropdownMenu>
@@ -32,6 +47,8 @@ const SearchBar = () => {
           type="text"
           placeholder="Search..."
           className="h-full py-0 px-3 border-none text-sm w-72 rounded-r-lg pl-8"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
     </div>

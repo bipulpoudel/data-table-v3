@@ -3,6 +3,7 @@ import * as Yup from "yup";
 import { StatusCodes } from "http-status-codes";
 
 import { Project, ProjectManager } from "../entity";
+import { Brackets } from "typeorm";
 
 const { BAD_REQUEST, OK } = StatusCodes;
 
@@ -25,7 +26,13 @@ export const list = async (req: Request, res: Response) => {
         pageIndex: 0,
         pageSize: 10,
       },
-      sorting = [],
+      sorting = [
+        {
+          id: "id",
+          desc: false,
+        },
+      ],
+      filters = [],
     } = req.body;
 
     const schema = Yup.object().shape({
@@ -35,26 +42,29 @@ export const list = async (req: Request, res: Response) => {
           pageSize: Yup.number().required(),
         })
         .required(),
-      sorting: Yup.array()
-        .of(
-          Yup.object()
-            .shape({
-              id: Yup.string()
-                .required()
-                .oneOf([
-                  "id",
-                  "name",
-                  "status",
-                  "estimated_cost",
-                  "project_manager_name",
-                  "last_updated",
-                ]),
-              desc: Yup.boolean().required(),
-            })
-            .required()
-        )
-        .required()
-        .min(1, "At least one sorting field is required"),
+      sorting: Yup.array().of(
+        Yup.object()
+          .shape({
+            id: Yup.string()
+              .required()
+              .oneOf([
+                "id",
+                "name",
+                "status",
+                "estimated_cost",
+                "project_manager_name",
+                "last_updated",
+              ]),
+            desc: Yup.boolean().required(),
+          })
+          .required()
+      ),
+      filters: Yup.array().of(
+        Yup.object().shape({
+          id: Yup.string().required().oneOf(["status"]),
+          value: Yup.string().required(),
+        })
+      ),
     });
 
     await schema.validate({ pagination, sorting });
@@ -68,22 +78,46 @@ export const list = async (req: Request, res: Response) => {
       "pm.id = project.project_manager_id"
     );
 
+    console.log("filters", filters);
+
+    if (filters.length > 0) {
+      for (const filter of filters) {
+        if (filter.id === "status" && filter.value === "all") {
+          continue;
+        }
+
+        if (filter.id === "status") {
+          projectQuery.andWhere("project.status ILIKE :filterValue", {
+            filterValue: `${filter.value}`,
+          });
+        } else {
+          projectQuery.andWhere(
+            `${returnSortingKey(filter.id)} ILIKE :filterValue`,
+            {
+              filterValue: `%${filter.value}%`,
+            }
+          );
+        }
+      }
+    }
+
     if (searchQuery && searchQuery !== "") {
-      projectQuery.where("project.name ILIKE :searchQuery", {
-        searchQuery: `%${searchQuery}%`,
-      });
-
-      projectQuery.orWhere("project.status ILIKE :searchQuery", {
-        searchQuery: `%${searchQuery}%`,
-      });
-
-      projectQuery.orWhere("pm.name ILIKE :searchQuery", {
-        searchQuery: `%${searchQuery}%`,
-      });
-
-      projectQuery.orWhere("pm.email ILIKE :searchQuery", {
-        searchQuery: `%${searchQuery}%`,
-      });
+      projectQuery.andWhere(
+        new Brackets((qb) => {
+          qb.where("project.name ILIKE :searchQuery", {
+            searchQuery: `%${searchQuery}%`,
+          })
+            .orWhere("project.status ILIKE :searchQuery", {
+              searchQuery: `%${searchQuery}%`,
+            })
+            .orWhere("pm.name ILIKE :searchQuery", {
+              searchQuery: `%${searchQuery}%`,
+            })
+            .orWhere("pm.email ILIKE :searchQuery", {
+              searchQuery: `%${searchQuery}%`,
+            });
+        })
+      );
     }
 
     if (sorting.length > 0) {
@@ -98,6 +132,8 @@ export const list = async (req: Request, res: Response) => {
           sorting[i].desc ? "DESC" : "ASC"
         );
       }
+    } else {
+      projectQuery.orderBy("project.id", "ASC");
     }
 
     const projects = await projectQuery
@@ -107,12 +143,39 @@ export const list = async (req: Request, res: Response) => {
 
     const totalCount = await projectQuery.getCount();
 
+    const riskProjectsCount = await projectQuery
+      .andWhere("project.status = :status", { status: "risk" })
+      .getCount();
+
+    const onHoldProjectsCount = await projectQuery
+      .andWhere("project.status = :status", { status: "onHold" })
+      .getCount();
+
+    const potentialRiskProjectsCount = await projectQuery
+      .andWhere("project.status = :status", { status: "potentialRisk" })
+      .getCount();
+
+    const onTrackProjectsCount = await projectQuery
+      .andWhere("project.status = :status", { status: "onTrack" })
+      .getCount();
+
+    const archivedProjectsCount = await projectQuery
+      .andWhere("project.status = :status", { status: "archived" })
+      .getCount();
+
     res.status(OK).json({
       status: "success",
       message: "Projects list",
       data: {
         totalCount,
         projects,
+        counts: {
+          risk: riskProjectsCount,
+          onHold: onHoldProjectsCount,
+          potentialRisk: potentialRiskProjectsCount,
+          onTrack: onTrackProjectsCount,
+          archived: archivedProjectsCount,
+        },
       },
     });
   } catch (error) {

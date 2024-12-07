@@ -7,7 +7,13 @@ import {
 } from "@/components/ui/tooltip";
 import { Arrow } from "@radix-ui/react-tooltip";
 
-const ProjectLastUpdate = ({ date }: { date: string }) => {
+const ProjectLastUpdate = ({
+  date,
+  last_updated_note,
+}: {
+  date: string;
+  last_updated_note: string;
+}) => {
   return (
     <div className="flex items-center gap-2">
       <TooltipProvider>
@@ -17,8 +23,7 @@ const ProjectLastUpdate = ({ date }: { date: string }) => {
           </TooltipTrigger>
           <TooltipContent side="bottom" className="bg-gray-900 w-96 text-base">
             <Arrow />
-            This is a note, user fills in while changing the status, which
-            explains the current project status.
+            {last_updated_note}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
